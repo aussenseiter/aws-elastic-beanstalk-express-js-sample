@@ -35,6 +35,20 @@ pipeline {
                 sh 'npm ci'
             }
         }
+
+        stage('Unit Tests') {
+            // Same Node 16 agent and same workspace, so node_modules from the
+            // install stage is already here (no reinstall needed)
+            agent {
+                docker {
+                    image 'node:16'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh 'npm test'
+            }
+        }
     }
 
     post {
