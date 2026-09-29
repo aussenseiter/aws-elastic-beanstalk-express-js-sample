@@ -1,6 +1,5 @@
 pipeline {
-    // Default agent: the Jenkins controller, which has the Docker CLI (talks to DinD).
-    // Image build/push stages will run here later.
+    // Default agent: the Jenkins controller, which has the Docker CLI (talks to DinD).    
     agent any
 
     options {
@@ -13,6 +12,7 @@ pipeline {
     environment {
         // Keep npm's cache inside the workspace; the container user can't write to /.npm
         npm_config_cache = "${WORKSPACE}/.npm"
+        IMAGE_NAME = 'aldenjunus/isec6000-a2-app'   // My Docker Hub repo
     }
 
     stages {
@@ -65,6 +65,36 @@ pipeline {
                 sh 'npm audit --json > reports/npm-audit.json || true'
                 // The actual gate: exits non-zero (fails the build) on High or Critical findings
                 sh 'npm audit --audit-level=high'
+            }
+        }
+
+        stage('Build Docker Image') {
+            // No agent block: runs on the controller, which has the Docker CLI (talks to DinD over TLS)
+            steps {
+                sh '''
+                    SHORT_SHA=$(git rev-parse --short HEAD)
+                    # Tag with build number and commit SHA so every image traces back to a build and a commit
+                    docker build -t "$IMAGE_NAME:$BUILD_NUMBER" -t "$IMAGE_NAME:$SHORT_SHA" .
+                    docker image ls "$IMAGE_NAME"
+                '''
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                // Inject Docker Hub credentials only for this block; Jenkins masks them as **** in the log
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials',
+                                                  usernameVariable: 'DOCKER_USER',
+                                                  passwordVariable: 'DOCKER_TOKEN')]) {
+                    sh '''
+                        SHORT_SHA=$(git rev-parse --short HEAD)
+                        # --password-stdin keeps the token out of the process list and shell history
+                        echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push "$IMAGE_NAME:$BUILD_NUMBER"
+                        docker push "$IMAGE_NAME:$SHORT_SHA"
+                        docker logout
+                    '''
+                }
             }
         }
     }
