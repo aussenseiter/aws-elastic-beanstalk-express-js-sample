@@ -1,0 +1,18 @@
+# Dependencies are installed fresh inside the image
+node_modules
+npm-debug.log
+
+# Version control and CI files aren't needed at runtime
+.git
+.github
+Jenkinsfile
+Dockerfile
+.dockerignore
+
+# Tests and docs stay out of the production image
+test
+*.md
+
+# Never ship secrets or local reports
+.env
+reports
