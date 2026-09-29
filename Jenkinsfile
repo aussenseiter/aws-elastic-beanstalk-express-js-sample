@@ -7,6 +7,7 @@ pipeline {
         skipDefaultCheckout(true)                       // we checkout explicitly in a stage below
         buildDiscarder(logRotator(numToKeepStr: '10'))  // keep only the last 10 builds
         timeout(time: 30, unit: 'MINUTES')              // don't let a stuck build hang forever
+        timestamps()                                    // add timestamps on every line
     }
 
     environment {
@@ -49,11 +50,30 @@ pipeline {
                 sh 'npm test'
             }
         }
+
+        stage('Dependency Scan') {
+            // Security gate: npm audit checks every dependency against known CVEs
+            agent {
+                docker {
+                    image 'node:16'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh 'mkdir -p reports'
+                // Save the full report for archiving; "|| true" so this line never fails the build
+                sh 'npm audit --json > reports/npm-audit.json || true'
+                // The actual gate: exits non-zero (fails the build) on High or Critical findings
+                sh 'npm audit --audit-level=high'
+            }
+        }
     }
 
     post {
         always {
-            deleteDir()   // clean the workspace after every run
+            // Keep the audit report downloadable from the build page, even when the build fails
+            archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
+            deleteDir()
         }
     }
 }

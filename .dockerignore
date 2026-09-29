@@ -1,6 +1,7 @@
 # Dependencies are installed fresh inside the image
 node_modules
 npm-debug.log
+.npm
 
 # Version control and CI files aren't needed at runtime
 .git
