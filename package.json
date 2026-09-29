@@ -18,5 +18,8 @@
   "devDependencies": {
     "mocha": "^10.8.2",
     "supertest": "^7.3.0"
+  },
+  "overrides": {
+    "serialize-javascript": "7.0.7"
   }
 }
