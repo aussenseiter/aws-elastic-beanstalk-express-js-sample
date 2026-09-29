@@ -73,6 +73,9 @@ build/Release
 node_modules/
 jspm_packages/
 
+# reports
+reports/
+
 # TypeScript v1 declaration files
 typings/
 

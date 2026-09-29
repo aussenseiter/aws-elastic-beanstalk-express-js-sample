@@ -5,7 +5,8 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "mocha"
+    "test": "mocha",
+    "test:ci": "mkdir -p reports && mocha --reporter xunit > reports/test-results.xml"
   },
   "repository": {
     "type": "git",

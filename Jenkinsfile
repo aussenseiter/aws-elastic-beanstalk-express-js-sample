@@ -15,6 +15,11 @@ pipeline {
         IMAGE_NAME = 'aldenjunus/isec6000-a2-app'   // My Docker Hub repo
     }
 
+    triggers {
+        // Check GitHub for new commits on main roughly every 5 minutes
+        pollSCM('H/5 * * * *')
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -47,7 +52,8 @@ pipeline {
                 }
             }
             steps {
-                sh 'npm test'
+                sh 'npm test'           // readable output in the console log
+                sh 'npm run test:ci'    // JUnit XML for Jenkins
             }
         }
 
@@ -101,6 +107,7 @@ pipeline {
 
     post {
         always {
+            junit testResults: 'reports/test-results.xml', allowEmptyResults: true
             // Keep the audit report downloadable from the build page, even when the build fails
             archiveArtifacts artifacts: 'reports/**', allowEmptyArchive: true
             deleteDir()
