@@ -94,11 +94,14 @@ pipeline {
                                                   passwordVariable: 'DOCKER_TOKEN')]) {
                     sh '''
                         SHORT_SHA=$(git rev-parse --short HEAD)
+                        # Store the login in a temp dir for this build only, not in the persistent Jenkins home
+                        export DOCKER_CONFIG=$(mktemp -d)
+                        # Always log out and delete the temp dir on exit, even if a push fails
+                        trap 'docker logout >/dev/null 2>&1; rm -rf "$DOCKER_CONFIG"' EXIT
                         # --password-stdin keeps the token out of the process list and shell history
                         echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USER" --password-stdin
                         docker push "$IMAGE_NAME:$BUILD_NUMBER"
                         docker push "$IMAGE_NAME:$SHORT_SHA"
-                        docker logout
                     '''
                 }
             }
